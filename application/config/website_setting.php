@@ -1,0 +1,20 @@
+<?php
+define("AXIS_ACCOUNT_NAME", "Testing");
+define("AXIS_ACCOUNT_TYPE", "11");
+define("AXIS_ACCOUNT_NUMBER", "2323233232");
+define("AXIS_IFSC_CODE", "34223232");
+define("AXIS_EMAIL", "test@email.com");
+define("AXIS_MOBILE", "5555555555");
+define("AXIS_FISHERMAN_SERIAL_NUMBER", "100");
+define("AXIS_GROUP_SERIAL_NUMBER", "100");
+define("AXIS_BENEFICIARY_ACCOUNT_TYPE", "10");
+define("ICICI_ACCOUNT_NAME", "Agrawal Associates");
+define("ICICI_ACCOUNT_TYPE", "11");
+define("ICICI_ACCOUNT_NUMBER", "01236524");
+define("ICICI_IFSC_CODE", "ICICIIFSC12345");
+define("ICICI_EMAIL", "test@email.com");
+define("ICICI_MOBILE", "5555555555");
+define("ICICI_BENEFICIARY_ACCOUNT_TYPE", "10");
+define("FISHERMAN_PARTICULAR", "Fisherman Wages");
+define("GROUP_PARTICULAR", "Group Wages");
+define("COMPANY_NAME", "Agrawal Associates");

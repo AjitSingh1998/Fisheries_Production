@@ -1,0 +1,12 @@
+[
+	{
+		"image": "/imagebrowser/demo/images/image_big.jpg",
+		"thumb": "/imagebrowser/demo/images/image_small.jpg",
+		"folder": "color"
+	},
+	{
+		"image": "/imagebrowser/demo/images/image_bw_big.jpg",
+		"thumb": "/imagebrowser/demo/images/image_bw_small.jpg",
+		"folder": "grayscale"
+	}
+]

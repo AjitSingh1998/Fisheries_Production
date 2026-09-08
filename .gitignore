@@ -1,0 +1,33 @@
+.DS_Store
+Thumbs.db
+
+# Environment and local runtime files
+.env
+.env.*
+*.log
+error_log
+php.ini
+.user.ini
+
+# CodeIgniter/runtime output
+application/logs/*
+!application/logs/index.html
+application/cache/*
+!application/cache/index.html
+
+# Database dumps and generated backups
+DB_BACKUP/
+database_backup/
+*.sql
+*.bak
+*.zip
+*.tar
+*.tar.gz
+*.gz
+
+# Dependency/build artifacts
+node_modules/
+vendor/
+dist/
+build/
+.htaccess.phpupgrader.*

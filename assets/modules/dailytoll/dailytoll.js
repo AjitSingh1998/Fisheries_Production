@@ -1,0 +1,384 @@
+
+$(document).ready(function(e) {
+	$('body').off('click', '.save_row');
+	$('body').off('click', '.edit_row');
+	$('body').off('click', '.delete_row');
+	
+	var fisherman_data = '';
+	$('.select-fisherman').select2({
+	  placeholder: "Select Fisherman",
+	  ajax: {
+		url: site_url+'dailytoll/fisherman',
+		dataType: 'json',
+		data: function (params) {
+		  return {
+			q: params.term, // search term
+			f_ids: function(){
+				var values = $("input[name='fisherman_id']").map(function(){return $(this).val();}).get();
+				return values;
+			}
+		  };
+		},
+		processResults: function (data) {
+		  // Tranforms the top-level key of the response object from 'items' to 'results'
+		  //console.log(data.results.result1); return '';
+		  fisherman_data = data.result2;
+		  return {
+			results: data.result1
+		  };
+		}
+	  },
+	  minimumInputLength : 1,
+	  allowClear: true
+	});
+	
+	//Add new row
+	$('.add_fisherman').on('click', function(){
+		var total_wt = 1, c_fisher = $('tr'), tr = $('#sale_products tr.editable');
+		var fisher_id 	= $('.select-fisherman option:selected').val();
+		var fisher_name = $('.select-fisherman option:selected').text(); // Code ( Name )
+		//console.log(fisherman_data[fisher_id]);
+		
+		if(fisher_id != '' && fisher_id != 'undefined' && fisher_name != '' && fisher_name != 'undefined'){
+			if(tr.length){
+				tr.each(function(index, element) {
+					var ele = $(element);
+					total_wt = ele.find('input.twt').val();
+					c_fisher = $(element);
+				});
+			}
+			if(total_wt > 0 && !tr.length ){
+				var $this = $(this);
+				var f_group = fisherman_data[fisher_id].Group; // Maingroup id
+				var f_maingroup = fisherman_data[fisher_id].MainGroup; // Maingroup id
+				var f_code = fisherman_data[fisher_id].Code; // Name
+				var f_name = fisherman_data[fisher_id].Name; // Name
+				var maingroupName = fisherman_data[fisher_id].maingroupName; // Name
+				var f_MajorFee = fisherman_data[fisher_id].MajorFee;
+				var f_MinorFee = fisherman_data[fisher_id].MinorFee;
+				var f_SawalFee = fisherman_data[fisher_id].SawalFee;
+				var govt_charges = fisherman_data[fisher_id].govt_charges;
+				
+				var row_asset = $('table.asset #row_asset').clone();
+				row_asset.find('.f_group').val(f_group);
+				row_asset.find('.f_maingroup').val(f_maingroup);
+				row_asset.find('.fisherman_id').val(fisher_id);
+				row_asset.find('.f_name').val(f_name);
+				row_asset.find('.govt_charges').val(govt_charges);
+				row_asset.find('.f_MajorFee').val(f_MajorFee);
+				row_asset.find('.f_MinorFee').val(f_MinorFee);
+				row_asset.find('.f_SawalFee').val(f_SawalFee);
+				row_asset.find('.fisherman_name').html(f_code+' <span class="label label-warning">'+maingroupName+'</span> '+f_name);
+				//row_asset.addClass('frid_'+fisher_id);
+				row_asset.removeClass('hidden');
+				row_asset.removeAttr('id');
+				$('#sale_products').append(row_asset);
+				row_asset.find('input[name="cqty"]').focus().select();
+				$('.select-fisherman option:selected').remove();
+				$('.select-fisherman').val('').trigger("change");
+				fisherman_data = '';
+			}else{
+				c_fisher.addClass('danger');
+				if(total_wt <= 0 ){
+					alert('Please enter value of '+ c_fisher.find('.fisherman_name').text()+' fisherman.');
+				}else{
+					alert('Please save the eddited fisher data before adding new.');
+				}
+				c_fisher.find('input[name="cqty"]').focus().select();
+			}
+		}
+	});
+	
+	//Save row
+	$('body').on('click', '.save_row', function(){
+		var $this = $(this);
+		//alert('save');
+		var editable 	= $this.closest('tr.editable');
+		var dtollid  	= $('.page_code').val();
+		var dtiid		= $this.attr('data-dtiid');
+		//var dtollid 	= $this.attr('data-dtollid');
+		var mode 		= $this.attr('data-mode');
+		var point 		= $('#point').val();
+		var point_name 	= $('#point option:selected').text();
+		var toll_date 	= $('#date').val();
+		
+		
+		var gtqty = $('.gtqty').text();
+		var gtwt = $('.gtwt').text();
+		//console.log();
+		var twt = editable.find('input[name="twt"]').val(); //Total Weight
+		var tqty = editable.find('input[name="tqty"]').val(); //Total Weight
+		
+		if(twt > 0){
+			var form_data = { 'mode': mode, 'point': point, 'toll_date': toll_date, 'dtollid': dtollid, 'dtiid': dtiid, 'gtqty': gtqty, 'gtwt': gtwt};
+			form_data[csrf_token_name] = csrf_token_value;
+			editable.find('input').each(function(index, element) {
+				var $ele = $(element);
+				var name = $ele.attr('name');
+				var val = $ele.val();
+				form_data[name] = val;
+			});
+						
+			$.ajax({
+				type: "POST",
+				url: site_url+"dailytoll/insertDailytoll",
+				data: form_data,
+				error: function (xhr, ajaxOptions, thrownError) {
+					alert('Response - '+ xhr.status+':  '+thrownError+' Please contact to development department.');
+				},
+				success: function( data ) {
+						if(data.status == 'success'){
+							$('#point').empty().append('<option value="'+point+'">'+point_name+'</option>');
+							$('#date').remove();
+							$('.date_grp').append('<input type="tel" id="date" readonly="readonly" class="disabled" value="'+toll_date+'" />');
+							$this.attr('data-mode', 'edit');
+							$this.attr('data-dtollid', data.dtollid);
+							$this.attr('data-dtiid', data.dti_id);
+							editable.find('.delete_row').attr('data-dtiid', data.dti_id);
+							
+							$('input[name="page_code"]').val(data.dtollid);
+							
+							$this.text('Edit');
+							$this.removeClass('btn-success save_row').addClass('btn-warning edit_row');
+							
+							editable.find('input[type="text"], input[type="number"]').each(function(index, element) {
+								var $ele = $(element);
+								var ele_val = $ele.val();
+								var td = $ele.closest('td');
+								td.html(ele_val);
+								//$ele.prop('disabled', true);
+								//$ele.addClass('disabled');
+							});
+							editable.removeClass('editable').removeClass('danger').addClass('saved');
+							
+						}else{
+							editable.addClass('danger');
+							alert(data.msg);
+							editable.find('input[name="cqty"]').focus().select();
+						}
+					}						
+			});
+			
+		}else{
+			editable.addClass('danger');
+			alert("Please enter the data befofe save.");
+			editable.find('input[name="cqty"]').focus().select();
+		}
+	});
+	
+	//Edit row
+	$('body').on('click', '.edit_row', function(){
+		var $this = $(this);
+		var tbody = $this.closest('#sale_products');
+		var tr_edit = tbody.find('tr.editable');
+		if(!tr_edit.length){
+			var editable 	= $this.closest('.saved');
+			editable.find('td.td_editable').each(function(index, element) {
+				var $ele = $(element);
+				var td = $ele.closest('td');
+				var td_data = td.data();
+				var ele_val = td.text();
+				if(td_data.name == 'tmqty' || td_data.name == 'tmwt' || td_data.name == 'tqty' || td_data.name == 'twt'){
+					var input = $('<input/>').attr({class:td_data.class+' disabled', type:'number', name:td_data.name, value:ele_val, readonly:'readonly', disabled:'disabled'});
+				}else{
+					var input = $('<input/>').attr({class:td_data.class, type:'text', name:td_data.name, value:ele_val});
+				}
+				td.html(input);
+				//$ele.prop('disabled', false);
+				//$ele.removeClass('disabled');
+			});
+			editable.removeClass('saved').addClass('editable');
+			$this.text('Update');
+			$this.removeClass('btn-warning edit_row').addClass('btn-success save_row');
+		}else{			
+			alert('Please save the current editable row before edit.');
+			tr_edit.addClass('danger');
+			tr_edit.find('input[name="cqty"]').focus().select();
+			
+		}
+	});
+	
+	$('body').on('click', '.delete_row', function(){
+		var $this = $(this);
+		var dt_id = $('input[name="page_code"]').val();
+		var conf = confirm('Are you sure to delete ?');
+		if(conf){
+			var dti_id = $(this).attr('data-dtiid');
+			var form_data = { 'dti_id': dti_id};
+			form_data[csrf_token_name] = csrf_token_value;
+			if(dti_id){
+				$.ajax({
+				type: "POST",
+				url: site_url+"dailytoll/delete_dtoll",
+				data: form_data,
+				error: function (xhr, ajaxOptions, thrownError) {
+					alert('Response - '+ xhr.status+':  '+thrownError+' Please contact to development department.');
+				},
+				success: function( data ) {
+					if(data.status == 'success'){
+						var data = deleteSelectedProductRow($this);
+						$.getJSON(site_url+"dailytoll/upd_on_del/?dt_id="+dt_id+'&gqty='+data.tqty+'&gwt='+data.twt); 
+					}
+					//alert(data.msg);
+				}
+			});
+			}else{
+				deleteSelectedProductRow($this);
+			}
+		}
+	})
+	
+	$('table tbody#sale_products').on('change', 'input.qty', function(){
+		var t_val = $(this).val();
+		if(t_val == ''){$(this).val(0);}
+		calculate_toll('qty', $(this));
+	});
+	
+	$('table tbody#sale_products').on('change', 'input.wt', function(){
+		var t_val = $(this).val();
+		if(t_val == ''){$(this).val(0);}
+		calculate_toll('wt', $(this));
+	});
+	
+	//Strict input box to accept only numeric(with floting point) values
+	$('body').on("keypress keyup blur", 'input[type="text"]', function (event) {
+		var t_val = $(this).val($(this).val().replace(/[^0-9\.]/g,''));
+		if ((event.which != 46 || $(this).val().indexOf('.') != -1) && (event.which < 48 || event.which > 57)) {
+			event.preventDefault();
+		}
+    });
+	
+	$('button.search_fisher').on('click', function(){
+		var input = $(this).closest('.input-group').find('input');
+		var text = input.val();
+		$("tbody#sale_products tr").removeClass('danger');
+		var tableRow = $("tbody#sale_products td span.code").filter(function() {
+						var node = $(this).text();						
+						return node == text;
+					}).closest("tr");
+		if(tableRow.length){
+			$("tbody#sale_products tr").hide();
+			tableRow.show();
+			$()
+		}else{
+			$("tbody#sale_products tr").show();
+		}
+		input.focus();
+	});
+	
+	$('.datepicker').datepicker({
+		format: 'dd/mm/yyyy',
+		autoclose: true,
+		todayHighlight: true
+	});
+	
+	$('.export_data').on('click', function(){
+		$("table.table").table2excel({
+			filename: 'Daily Toll Info Detail'
+		});
+	});
+	
+	$('.print_data').on('click', function(){
+		$("table.table").print({
+			stylesheet: base_url+"assets/css/print.css",
+			noPrintSelector: ".no-print"
+		});
+	});
+	
+});
+	
+	function deleteSelectedProductRow($this){
+		$this.closest('tr').remove();
+		var tbody = $('tbody#sale_products');
+		var g_qty_total = 0.00;
+		var g_wt_total = 0.00;
+		
+		if(tbody.find('td.cc').length){
+			tbody.find('td.cc').each(function(index, element) {
+			var ele = $(element);
+			var name = ele.data('name');
+			var e_vl = parseFloat(ele.text());
+			var column_total = 0.00;
+			tbody.find('td[data-name="'+name+'"]').each(function(index, element) {
+				var ele2 = $(element);
+				column_total = column_total+parseFloat(ele2.text());
+			});
+			$('.g_total th.'+name).text(column_total.toFixed(2));
+			if(ele.hasClass('qty')){
+				g_qty_total = e_vl+g_qty_total;
+			}else if(ele.hasClass('wt')){
+				g_wt_total = e_vl+g_wt_total;
+			}
+		});
+		}else{
+			$('.g_total th.text-center').text('0.00');
+		}
+		
+		$('.gtqty').text(g_qty_total.toFixed(2));
+		$('.gtwt').text(g_wt_total.toFixed(2));
+		
+		return {'tqty':g_qty_total, 'twt':g_wt_total}
+	}
+	
+	function calculate_toll(type, $this){
+		//var $this = $(this);
+		//Start Single row calculation
+		var row_total = 0.00; //row total qty/wt
+		var editable = $this.closest('.editable');
+		
+		editable.find('td .'+type).each(function(index, element) {
+			var ele = $(element);
+			row_total = row_total+parseFloat(ele.val());
+		});
+		
+		// Total qty and weight of Catla, Rohu, Mragal, KaalBasu, Anya Karp:, Local Major
+		
+		var sawal = parseFloat(editable.find('.s'+type).val()); // sawal qty / sawal weight
+		var minor_wt = parseFloat(editable.find('.localminor_wt').val()); // Local minor weight
+		
+		//console.log(row_total+"--"+sawal+"--"+minor_wt);
+		
+		var major_total = (row_total-sawal); // Total qty and weight of Catla, Rohu, Mragal, KaalBasu, Anya Karp:, Local Major
+		if(type == 'wt'){
+			major_total = (major_total-minor_wt);
+		}
+		
+		editable.find('.t'+type).val(row_total.toFixed(2));
+		editable.find('.tm'+type).val(major_total.toFixed(2));
+		//End single row calculation
+		
+		
+		var name = $this.attr('name');
+		var g_total = 0.00;
+		var tbody = $this.closest('tbody#sale_products');
+		
+		tbody.find('td[data-name="'+name+'"]').each(function(index, element) {
+			var ele = $(element);
+			var ele_val = 0.00;
+			if(ele.find('input').length){
+				ele_val = parseFloat(ele.find('input').val());
+			}else{
+				ele_val = parseFloat(ele.text());
+			}
+			g_total = g_total+ele_val;
+		});
+		
+		var g_tqty = 0.00;
+		
+		tbody.find('td[data-name="t'+type+'"]').each(function(index, element) {
+			var ele = $(element);
+			var ele_val = 0.00;
+			if(ele.find('input').length){
+				ele_val = parseFloat(ele.find('input').val());
+			}else{
+				ele_val = parseFloat(ele.text());
+			}
+			
+			g_tqty = g_tqty+ele_val;
+		});
+		//console.log(name);
+		//console.log(type);
+		//console.log(g_tqty);
+		$('.g_total th.gt'+type).text(g_tqty.toFixed(2));
+		$('.g_total th.'+name).text(g_total.toFixed(2));
+	}

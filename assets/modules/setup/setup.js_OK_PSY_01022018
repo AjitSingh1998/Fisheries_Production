@@ -1,0 +1,54 @@
+// JavaScript Document
+$(document).ready(function() {
+	
+	$("body").on("click", ".loadActionForm", function(event){
+		var $this = $(this);
+		event.preventDefault();
+		var urll = $this.attr("href");
+		$('#common-modal-asset .modal-body').empty();
+		$('#common-modal-asset').modal({ backdrop: 'static', keyboard: false });
+		$.getJSON(urll, null, function (response) {
+			$('#common-modal-asset .modal-title').html(response.page_title);
+			$('#common-modal-asset .modal-body').html(response.setup_form);
+			$('#common-modal-asset .modal-body').css('max-height', 500);
+			$('.ajax-response').html('');
+		});
+	});
+	
+	$('body').on('click', '.save_form', function(event){
+		var $this = $(this);
+		var modal_content = $this.closest('.modal-content');
+		var form = modal_content.find('form');
+		var urll = form.attr('action');
+		$('.ajax-response').html('');
+		var form_data = form.serialize();
+		$.ajax({
+			url : urll, 
+			type : "POST",
+			beforeSend: show_loader($('#panel_loader')),
+			data : form_data
+		}).done(function(response){	
+			$('#common-modal-asset .modal-title').html(response.page_title);
+			$('#common-modal-asset .modal-body').html(response.setup_form);
+		
+			if(response.status != 'undefined' && response.status == 'success'){
+				$('.ajax-response').html('<div class="alert alert-success"> <button data-dismiss="alert" class="close">×</button> '+response.msg+'</div>');
+				form.find('input[type="text"], select').each(function(index, element) {
+                    $(element).val('');
+                });
+				
+				$('#common-modal-asset').modal('hide');
+				$('#common-modal-asset .modal-body').empty();
+				$('.gc-refresh').trigger('click');
+				location.reload(true);
+			}else if(response.status != 'undefined' && response.status == 'danger'){
+				$('.ajax-response').html('<div class="alert alert-warning"> <button data-dismiss="alert" class="close">×</button> '+response.msg+'</div>');
+			}else if(response.status == 'error'){
+				$('.ajax-response').html(response.msg);
+			}
+			var objDiv = document.getElementById("asset-modal-body");
+			objDiv.scrollTop = objDiv.scrollHeight;
+			hide_loader($('#panel_loader'));
+		});
+	});
+});
